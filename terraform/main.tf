@@ -1,23 +1,37 @@
-terraform {
-  required_version = ">= 1.0"
-}
+name: IaC Security Scan (Terraform + Checkov)
 
-provider "aws" {
-  region = var.aws_region
-}
+on:
+  pull_request:
+  push:
+    branches: [ main ]
 
-resource "aws_s3_bucket" "demo" {
-  bucket = "lab-demo-bucket-github-only-12345"
-  acl    = "private"
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
 
-  versioning { enabled = true }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-}
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
 
+      - name: Terraform Init
+        run: terraform -chdir=terraform init -backend=false
+
+      - name: Terraform Format Check
+        run: terraform -chdir=terraform fmt -check
+
+      - name: Terraform Validate
+        run: terraform -chdir=terraform validate
+
+      - name: Terraform Plan
+        run: terraform -chdir=terraform plan -no-color -input=false
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov scan
+        run: checkov -d terraform -o cli || true
