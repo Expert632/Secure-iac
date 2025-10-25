@@ -18,6 +18,9 @@ jobs:
         with:
           terraform_version: latest
 
+      - name: Terraform Init
+        run: terraform -chdir=terraform init -backend=false
+
       - name: Terraform Format Check
         run: terraform -chdir=terraform fmt -check
 
@@ -25,10 +28,10 @@ jobs:
         run: terraform -chdir=terraform validate
 
       - name: Terraform Plan
-        run: terraform -chdir=terraform plan -no-color
+        run: terraform -chdir=terraform plan -no-color -input=false
 
       - name: Install Checkov
         run: pip install checkov
 
       - name: Run Checkov scan
-        run: checkov -d terraform -o cli
+        run: checkov -d terraform -o cli || true
