@@ -1,37 +1,22 @@
-name: IaC Security Scan (Terraform + Checkov)
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
 
-on:
-  pull_request:
-  push:
-    branches: [ main ]
+  required_version = ">= 1.5.0"
+}
 
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
+provider "aws" {
+  region = "us-east-1"
+}
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+# Dummy Resource (Testing Checkov Security Scan)
+resource "aws_s3_bucket" "my_insecure_bucket" {
+  bucket = "insecure-example-bucket-1234"
 
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: latest
-
-      - name: Terraform Init
-        run: terraform -chdir=terraform init -backend=false
-
-      - name: Terraform Format Check
-        run: terraform -chdir=terraform fmt -check
-
-      - name: Terraform Validate
-        run: terraform -chdir=terraform validate
-
-      - name: Terraform Plan
-        run: terraform -chdir=terraform plan -no-color -input=false
-
-      - name: Install Checkov
-        run: pip install checkov
-
-      - name: Run Checkov scan
-        run: checkov -d terraform -o cli || true
+  # ❌ Public Access (Checkov va détecter une vulnérabilité)
+  acl    = "public-read"
+}
